@@ -7,5 +7,4 @@ type Category struct {
 	Name      string    `json:"name" gorm:"size:50"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Products  []Product
 }

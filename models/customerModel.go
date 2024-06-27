@@ -10,6 +10,4 @@ type Customer struct {
 	Password  string    `json:"password" gorm:"size:100"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Carts     []Cart
-	Orders    []Order
 }
