@@ -1,17 +1,20 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"calshoes_api/config"
+	"calshoes_api/routes"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 func main() {
+	config.ConnectDB()
+
 	// Create an instance
 	app := fiber.New()
 
 	// Define a route
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Hello, World!",
-		})
-	})
+	routes.Setup(app)
 
 	// Start the Fiber app
 	app.Listen(":3000")
