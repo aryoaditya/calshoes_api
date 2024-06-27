@@ -41,7 +41,6 @@ func AutoMigrate(connection *gorm.DB) {
 		&models.Cart{},
 		&models.Category{},
 		&models.Customer{},
-		&models.OrderItem{},
 		&models.Order{},
 		&models.Payment{},
 		&models.Product{})
