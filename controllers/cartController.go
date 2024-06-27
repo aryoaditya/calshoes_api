@@ -232,3 +232,61 @@ func DeleteCartItem(c *fiber.Ctx) error {
 		"message": "Cart item deleted successfully",
 	})
 }
+
+func Checkout(c *fiber.Ctx) error {
+	userClaims := c.Locals("user").(jwt.MapClaims)
+	customerId := uint(userClaims["id"].(float64))
+
+	var cart models.Cart
+	if err := config.DB.Where("customer_id = ?", customerId).Preload("Customer").First(&cart).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": "Cart not found",
+			"error":   err.Error(),
+		})
+	}
+
+	var cartItems []models.CartItem
+	if err := config.DB.Where("cart_id = ?", cart.Id).Preload("Product").Find(&cartItems).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Failed to retrieve cart items",
+			"error":   err.Error(),
+		})
+	}
+
+	var totalPrice float64
+	for _, item := range cartItems {
+		totalPrice += float64(item.Quantity) * item.Product.Price
+	}
+
+	newOrder := models.Order{
+		CustomerId: customerId,
+		TotalPrice: totalPrice,
+		Status:     "Pending",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	if err := config.DB.Create(&newOrder).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Failed to create a new order",
+			"error":   err.Error(),
+		})
+	}
+
+	if err := config.DB.Where("cart_id = ?", cart.Id).Delete(&models.CartItem{}).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Failed to clear cart items",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": "Checkout successful",
+		"data":    newOrder,
+	})
+}
