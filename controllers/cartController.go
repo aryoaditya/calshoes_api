@@ -3,6 +3,8 @@ package controllers
 import (
 	"calshoes_api/config"
 	"calshoes_api/models"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -119,5 +121,86 @@ func AddToCart(c *fiber.Ctx) error {
 		"success": true,
 		"message": "Item added to cart successfully",
 		"data":    cartItem,
+	})
+}
+
+func GetCartItems(c *fiber.Ctx) error {
+	// Get customer ID from JWT claims
+	userClaims := c.Locals("user").(jwt.MapClaims)
+	customerId := uint(userClaims["id"].(float64))
+
+	// Find the customer's cart
+	var cart models.Cart
+	if err := config.DB.Where("customer_id = ?", customerId).Preload("Customer").First(&cart).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": "Cart not found",
+			"error":   err.Error(),
+		})
+	}
+
+	// Find all cart items
+	var cartItems []models.CartItem
+	if err := config.DB.Where("cart_id = ?", cart.Id).Preload("Cart.Customer").Preload("Product.Category").Find(&cartItems).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Failed to retrieve cart items",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": "Cart items retrieved successfully",
+		"data":    cartItems,
+	})
+}
+
+func DeleteCartItem(c *fiber.Ctx) error {
+	userClaims := c.Locals("user").(jwt.MapClaims)
+	customerId := uint(userClaims["id"].(float64))
+
+	// Parse product ID
+	productID, err := strconv.ParseUint(c.Params("product_id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Invalid product ID",
+			"error":   err.Error(),
+		})
+	}
+
+	// Check if the customer has an active cart
+	var cart models.Cart
+	if err := config.DB.Where("customer_id = ?", customerId).First(&cart).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": "Cart not found",
+			"error":   err.Error(),
+		})
+	}
+
+	// Check if the cart item exists
+	var cartItem models.CartItem
+	if err := config.DB.Where("cart_id = ? AND product_id = ?", cart.Id, productID).First(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": "Cart item not found",
+			"error":   err.Error(),
+		})
+	}
+
+	// Delete the cart item from the database
+	if err := config.DB.Delete(&cartItem).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Failed to delete cart item",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": fmt.Sprintf("Cart item %d deleted successfully", cartItem.Id),
 	})
 }

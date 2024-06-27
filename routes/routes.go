@@ -32,5 +32,7 @@ func Setup(app *fiber.App) {
 
 	// Cart routes
 	api.Post("/cart/add", controllers.AddToCart)
+	api.Get("/cart/items", controllers.GetCartItems)
+	api.Delete("/cart/item/:product_id", controllers.DeleteCartItem)
 	api.Get("/cart", controllers.GetCart)
 }
