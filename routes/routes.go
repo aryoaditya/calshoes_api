@@ -2,12 +2,19 @@ package routes
 
 import (
 	"calshoes_api/controllers"
+	"calshoes_api/middlewares"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func Setup(app *fiber.App) {
-	api := app.Group("/api")
+	// Auth routes
+	app.Post("/register", controllers.Register)
+	app.Post("/login", controllers.Login)
+	app.Get("/logout", controllers.Logout)
+
+	// Grouping api endpoint
+	api := app.Group("/api", middlewares.JWTMiddleware())
 
 	//Category routes
 	api.Get("/categories", controllers.GetCategories)

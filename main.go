@@ -1,14 +1,15 @@
 package main
 
 import (
-	db "calshoes_api/config"
+	"calshoes_api/config"
 	"calshoes_api/routes"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-	db.Connect()
+	config.ConnectDB()
+
 	// Create an instance
 	app := fiber.New()
 

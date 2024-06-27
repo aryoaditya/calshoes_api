@@ -1,4 +1,4 @@
-package db
+package config
 
 import (
 	"calshoes_api/models"
@@ -12,7 +12,7 @@ import (
 
 var DB *gorm.DB
 
-func Connect() {
+func ConnectDB() {
 	godotenv.Load()
 
 	dbHost := os.Getenv("DB_HOST")
