@@ -12,7 +12,7 @@ func GetCategories(c *fiber.Ctx) error {
 
 	// Get all categories from the database
 	if err := db.DB.Preload("Products").Find(&categories).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot retrieve categories",
 			"error":   err.Error(),
@@ -20,7 +20,7 @@ func GetCategories(c *fiber.Ctx) error {
 	}
 
 	// Success GetCategories
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Categories retrieved successfully",
 		"data":    categories,
@@ -34,7 +34,7 @@ func GetCategoryById(c *fiber.Ctx) error {
 
 	// Fetch the category by Id from the database
 	if err := db.DB.Preload("Products").First(&category, idParam).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Category not found",
 			"error":   err.Error(),
@@ -42,7 +42,7 @@ func GetCategoryById(c *fiber.Ctx) error {
 	}
 
 	// Success GetCategoryById
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Category retrieved successfully",
 		"data":    category,

@@ -16,7 +16,7 @@ func CreateProduct(c *fiber.Ctx) error {
 	// Convert the JSON request body into the product model
 	if err := c.BodyParser(product); err != nil {
 		log.Printf("Error parsing product data: %v", err)
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot parse JSON",
 			"error":   err.Error(),
@@ -29,7 +29,7 @@ func CreateProduct(c *fiber.Ctx) error {
 
 	// Insert the product into the database
 	if err := db.DB.Create(&product).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot create product",
 			"error":   err.Error(),
@@ -37,7 +37,7 @@ func CreateProduct(c *fiber.Ctx) error {
 	}
 
 	// Success CreateProduct
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Success",
 		"data":    product,
@@ -49,7 +49,7 @@ func GetProducts(c *fiber.Ctx) error {
 
 	// Get all products from the database
 	if err := db.DB.Preload("Category").Find(&products).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot retrieve products",
 			"error":   err.Error(),
@@ -57,7 +57,7 @@ func GetProducts(c *fiber.Ctx) error {
 	}
 
 	// Success GetProducts
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Products retrieved successfully",
 		"data":    products,
@@ -69,7 +69,7 @@ func GetProductById(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": "Invalid product Id",
 			"error":   err.Error(),
@@ -80,7 +80,7 @@ func GetProductById(c *fiber.Ctx) error {
 
 	// Get the product by Id from the database
 	if err := db.DB.Preload("Category").First(&product, uint(id)).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Product not found",
 			"error":   err.Error(),
@@ -88,7 +88,7 @@ func GetProductById(c *fiber.Ctx) error {
 	}
 
 	// Success GetProductById
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Product retrieved successfully",
 		"data":    product,
@@ -100,7 +100,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": "Invalid product Id",
 			"error":   err.Error(),
@@ -110,7 +110,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	// Get the existing product from the database
 	var currentProduct models.Product
 	if err := db.DB.First(&currentProduct, uint(id)).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Product not found",
 			"error":   err.Error(),
@@ -120,7 +120,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	// Convert the JSON request body into the product model
 	newProduct := new(models.Product)
 	if err := c.BodyParser(newProduct); err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot parse JSON",
 			"error":   err.Error(),
@@ -137,7 +137,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 
 	// Save the updated product back to the database
 	if err := db.DB.Save(&currentProduct).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot update product",
 			"error":   err.Error(),
@@ -145,7 +145,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	}
 
 	// Success UpdateProduct
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Product updated successfully",
 		"data":    currentProduct,
@@ -157,7 +157,7 @@ func DeleteProduct(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
-		return c.Status(400).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": "Invalid product Id",
 			"error":   err.Error(),
@@ -167,7 +167,7 @@ func DeleteProduct(c *fiber.Ctx) error {
 	// Get the existing product from the database
 	var product models.Product
 	if err := db.DB.First(&product, uint(id)).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Product not found",
 			"error":   err.Error(),
@@ -176,7 +176,7 @@ func DeleteProduct(c *fiber.Ctx) error {
 
 	// Delete the product from the database
 	if err := db.DB.Delete(&product).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot delete product",
 			"error":   err.Error(),
@@ -184,7 +184,7 @@ func DeleteProduct(c *fiber.Ctx) error {
 	}
 
 	// Success DeleteProduct
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Product deleted successfully",
 	})
