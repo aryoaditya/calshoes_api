@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	db "calshoes_api/config"
+	"calshoes_api/config"
 	"calshoes_api/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,7 +11,7 @@ func GetCategories(c *fiber.Ctx) error {
 	var categories []models.Category
 
 	// Get all categories from the database
-	if err := db.DB.Preload("Products").Find(&categories).Error; err != nil {
+	if err := config.DB.Preload("Products").Find(&categories).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot retrieve categories",
@@ -32,8 +32,8 @@ func GetCategoryById(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	var category models.Category
 
-	// Fetch the category by Id from the database
-	if err := db.DB.Preload("Products").First(&category, idParam).Error; err != nil {
+	// Find category by Id
+	if err := config.DB.Preload("Products").First(&category, idParam).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Category not found",

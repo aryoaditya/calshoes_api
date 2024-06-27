@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	db "calshoes_api/config"
+	"calshoes_api/config"
 	"calshoes_api/models"
 	"log"
 	"strconv"
@@ -28,7 +28,7 @@ func CreateProduct(c *fiber.Ctx) error {
 	product.UpdatedAt = time.Now()
 
 	// Insert the product into the database
-	if err := db.DB.Create(&product).Error; err != nil {
+	if err := config.DB.Create(&product).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot create product",
@@ -48,7 +48,7 @@ func GetProducts(c *fiber.Ctx) error {
 	var products []models.Product
 
 	// Get all products from the database
-	if err := db.DB.Preload("Category").Find(&products).Error; err != nil {
+	if err := config.DB.Preload("Category").Find(&products).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot retrieve products",
@@ -79,7 +79,7 @@ func GetProductById(c *fiber.Ctx) error {
 	var product models.Product
 
 	// Get the product by Id from the database
-	if err := db.DB.Preload("Category").First(&product, uint(id)).Error; err != nil {
+	if err := config.DB.Preload("Category").First(&product, uint(id)).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Product not found",
@@ -109,7 +109,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 
 	// Get the existing product from the database
 	var currentProduct models.Product
-	if err := db.DB.First(&currentProduct, uint(id)).Error; err != nil {
+	if err := config.DB.First(&currentProduct, uint(id)).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Product not found",
@@ -131,12 +131,12 @@ func UpdateProduct(c *fiber.Ctx) error {
 	currentProduct.Name = newProduct.Name
 	currentProduct.Description = newProduct.Description
 	currentProduct.Price = newProduct.Price
-	currentProduct.ImargeUrl = newProduct.ImargeUrl
+	currentProduct.ImageUrl = newProduct.ImageUrl
 	currentProduct.CategoryId = newProduct.CategoryId
 	currentProduct.UpdatedAt = time.Now()
 
 	// Save the updated product back to the database
-	if err := db.DB.Save(&currentProduct).Error; err != nil {
+	if err := config.DB.Save(&currentProduct).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot update product",
@@ -166,7 +166,7 @@ func DeleteProduct(c *fiber.Ctx) error {
 
 	// Get the existing product from the database
 	var product models.Product
-	if err := db.DB.First(&product, uint(id)).Error; err != nil {
+	if err := config.DB.First(&product, uint(id)).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Product not found",
@@ -175,7 +175,7 @@ func DeleteProduct(c *fiber.Ctx) error {
 	}
 
 	// Delete the product from the database
-	if err := db.DB.Delete(&product).Error; err != nil {
+	if err := config.DB.Delete(&product).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Cannot delete product",
@@ -187,5 +187,42 @@ func DeleteProduct(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Product deleted successfully",
+	})
+}
+
+func GetProductsByCategory(c *fiber.Ctx) error {
+	categoryId := c.Params("id")
+	var products []models.Product
+	var category models.Category
+
+	// Check if the category exists
+	if err := config.DB.First(&category, categoryId).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": "Category not found",
+		})
+	}
+
+	// Find products by category Id
+	if err := config.DB.Where("category_id = ?", categoryId).Find(&products).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Cannot retrieve products",
+			"error":   err.Error(),
+		})
+	}
+
+	// If no products found for the category_id
+	if len(products) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"message": "No products found",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"message": "Products retrieved successfully",
+		"data":    products,
 	})
 }
