@@ -3,7 +3,6 @@ package controllers
 import (
 	"calshoes_api/config"
 	"calshoes_api/models"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -44,7 +43,6 @@ func GetCart(c *fiber.Ctx) error {
 }
 
 func AddToCart(c *fiber.Ctx) error {
-	// Get customer ID from JWT claims
 	userClaims := c.Locals("user").(jwt.MapClaims)
 	customerId := uint(userClaims["id"].(float64))
 
@@ -91,25 +89,56 @@ func AddToCart(c *fiber.Ctx) error {
 		}
 	}
 
-	// Create a new cart item
-	cartItem := models.CartItem{
-		CartId:    cart.Id,
-		ProductId: req.ProductId,
-		Quantity:  req.Quantity,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	// Check if the product already exists
+	var existingCartItem models.CartItem
+	if err := config.DB.Where("cart_id = ? AND product_id = ?", cart.Id, req.ProductId).First(&existingCartItem).Error; err != nil {
+		// If not found, create a new cart item
+		newCartItem := models.CartItem{
+			CartId:    cart.Id,
+			ProductId: req.ProductId,
+			Quantity:  req.Quantity,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		if err := config.DB.Create(&newCartItem).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"success": false,
+				"message": "Failed to add item to cart",
+				"error":   err.Error(),
+			})
+		}
+
+		// Reload cart item to get full details
+		if err := config.DB.Preload("Cart.Customer").Preload("Product.Category").First(&newCartItem, newCartItem.Id).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"success": false,
+				"message": "Failed to load cart item details",
+				"error":   err.Error(),
+			})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": true,
+			"message": "Item added to cart successfully",
+			"data":    newCartItem,
+		})
 	}
 
-	if err := config.DB.Create(&cartItem).Error; err != nil {
+	// If found, update the quantity of existing cart item
+	existingCartItem.Quantity += req.Quantity
+	existingCartItem.UpdatedAt = time.Now()
+
+	if err := config.DB.Save(&existingCartItem).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Failed to add item to cart",
+			"message": "Failed to update cart item quantity",
 			"error":   err.Error(),
 		})
 	}
 
-	// Reload cart item to get full details including relations
-	if err := config.DB.Preload("Cart.Customer").Preload("Product.Category").First(&cartItem, cartItem.Id).Error; err != nil {
+	// Reload cart item to get full details
+	if err := config.DB.Preload("Cart.Customer").Preload("Product.Category").First(&existingCartItem, existingCartItem.Id).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Failed to load cart item details",
@@ -119,13 +148,12 @@ func AddToCart(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
-		"message": "Item added to cart successfully",
-		"data":    cartItem,
+		"message": "Item quantity updated in cart successfully",
+		"data":    existingCartItem,
 	})
 }
 
 func GetCartItems(c *fiber.Ctx) error {
-	// Get customer ID from JWT claims
 	userClaims := c.Locals("user").(jwt.MapClaims)
 	customerId := uint(userClaims["id"].(float64))
 
@@ -201,6 +229,6 @@ func DeleteCartItem(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
-		"message": fmt.Sprintf("Cart item %d deleted successfully", cartItem.Id),
+		"message": "Cart item deleted successfully",
 	})
 }
