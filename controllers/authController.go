@@ -80,7 +80,7 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := middlewares.GenerateJWT(user.Email)
+	token, err := middlewares.GenerateJWT(user.Email, user.Id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,

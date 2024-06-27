@@ -29,4 +29,8 @@ func Setup(app *fiber.App) {
 
 	//Products by category
 	api.Get("/categories/:id/products", controllers.GetProductsByCategory)
+
+	// Cart routes
+	api.Post("/cart/add", controllers.AddToCart)
+	api.Get("/cart", controllers.GetCart)
 }

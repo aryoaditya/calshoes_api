@@ -63,8 +63,9 @@ func JWTMiddleware() fiber.Handler {
 }
 
 // GenerateJWT generates a new JWT token
-func GenerateJWT(email string) (string, error) {
+func GenerateJWT(email string, id uint) (string, error) {
 	claims := jwt.MapClaims{
+		"id":    id,
 		"email": email,
 		"exp":   time.Now().Add(time.Hour * 72).Unix(), // Token expires in 72 hours
 	}
