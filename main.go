@@ -17,5 +17,5 @@ func main() {
 	routes.Setup(app)
 
 	// Start the Fiber app
-	app.Listen(":3000")
+	app.Listen(":8080")
 }
